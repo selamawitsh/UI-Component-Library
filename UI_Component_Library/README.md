@@ -1,16 +1,29 @@
-# React + Vite
+# UI Component Library
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Small React app to browse UI components with search, category filters and preview modal.
 
-Currently, two official plugins are available:
+## Features
+- Live search (filters as you type)
+- Category filtering (click a category to show only its components)
+- Preview modal for a component
+- Simple card list of components
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Run locally
+1. Install dependencies
+   - npm install
+2. Start dev server
+   - npm start
+3. Build
+   - npm run build
 
-## React Compiler
+(Assumes a standard Create React App / Vite setup. Adjust commands if your project differs.)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project structure
+- src/
+  - App.jsx
+  - Components/
+    - ComponentCard.jsx
+    - Sidebar.jsx
+    - CategoryItem.jsx
+    - QuickAction.jsx
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
