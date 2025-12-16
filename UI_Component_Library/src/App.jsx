@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import Sidebar from "./Components/Sidebar.jsx";
 import ComponentCard from "./Components/ComponentCard.jsx";
+import { componentRegistry } from "./componentRegistry";
 
 export default function App() {
   const components = [
@@ -9,36 +10,42 @@ export default function App() {
       difficulty: "medium",
       tags: ["overlay", "dialog", "popup"],
       category: "overlays",
+      image: "/previews/modal-dialog.svg",
     },
     {
       title: "Dropdown Menu",
       difficulty: "easy",
       tags: ["dropdown", "menu", "select"],
       category: "interactive",
+      image: "/previews/dropdown-menu.svg",
     },
     {
       title: "Navigation Sidebar",
       difficulty: "medium",
       tags: ["sidebar", "navigation", "menu"],
       category: "layout",
+      image: "/previews/navigation-sidebar.svg",
     },
     {
       title: "Card Layout",
       difficulty: "easy",
       tags: ["card", "layout", "ui"],
       category: "layout",
+      image: "/previews/card-layout.svg",
     },
     {
       title: "Form Input",
       difficulty: "easy",
       tags: ["form", "input", "validation"],
       category: "forms",
+      image: "/previews/form-input.svg",
     },
     {
       title: "Form Textarea",
       difficulty: "easy",
       tags: ["form", "textarea", "input"],
       category: "forms",
+      image: "/previews/form-textarea.svg",
     },
   ];
 
@@ -58,6 +65,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [displayed, setDisplayed] = useState(components);
   const [preview, setPreview] = useState(null);
+  const [codeView, setCodeView] = useState(null);
 
   function applyFilter({ q = query, category = selectedCategory } = {}) {
     const qLower = q.trim().toLowerCase();
@@ -84,8 +92,43 @@ export default function App() {
     setPreview(component);
   }
 
+  function handleCodeOpen(component) {
+    const entry = componentRegistry[component.title];
+    if (entry)
+      setCodeView({
+        title: component.title,
+        source: entry.source,
+        filename: entry.filename,
+      });
+    else
+      setCodeView({
+        title: component.title,
+        source: "// no source available",
+        filename: `${component.title}.jsx`,
+      });
+  }
+
+  function handleCodeClose() {
+    setCodeView(null);
+  }
+
   function handlePreviewClose() {
     setPreview(null);
+  }
+
+  function downloadComponent(title) {
+    const entry = componentRegistry[title];
+    if (!entry) return;
+
+    const blob = new Blob([entry.source], { type: "text/jsx" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = entry.filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
   }
 
   // initialize displayed on mount
@@ -98,12 +141,49 @@ export default function App() {
     applyFilter({ q: query, category: selectedCategory });
   }, [query, selectedCategory]);
 
+  // --- Quick action handlers ---
+  function handleDownloadAll() {
+    try {
+      // download each registered component as a separate .jsx file
+      Object.values(componentRegistry).forEach((entry) => {
+        try {
+          const blob = new Blob([entry.source], { type: "text/jsx" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = entry.filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error("Failed to download", entry.filename, err);
+        }
+      });
+    } catch (err) {
+      console.error("Download all failed", err);
+    }
+  }
+
+  function handleOpenStyleGuide() {
+    window.open("/style-guide.html", "_blank");
+  }
+
+  function handleOpenGitHub() {
+    window.open("https://github.com/selamawitsh/UI-Component-Library", "_blank");
+  }
+
   return (
     <div className="w-full min-h-screen bg-neutral-900 text-white flex">
       <Sidebar
         categories={categories}
         selected={selectedCategory}
         onSelect={handleCategorySelect}
+        quickActions={{
+          downloadAll: handleDownloadAll,
+          openStyleGuide: handleOpenStyleGuide,
+          openGitHub: handleOpenGitHub,
+        }}
       />
 
       <main className="flex-1 p-10">
@@ -125,39 +205,92 @@ export default function App() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
           {displayed.map((comp, i) => (
-            <ComponentCard key={i} data={comp} onPreview={handlePreviewOpen} />
+            <ComponentCard
+              key={i}
+              data={comp}
+              onPreview={handlePreviewOpen}
+              onCode={handleCodeOpen}
+            />
           ))}
         </div>
       </main>
 
       {preview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-neutral-850 rounded-lg w-11/12 max-w-2xl p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-semibold">{preview.title}</h2>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+          <div className="bg-neutral-900 rounded-lg p-6 w-11/12 max-w-2xl">
+            <div className="flex justify-between mb-4">
+              <h2 className="text-lg font-semibold">{preview.title}</h2>
               <button
                 onClick={handlePreviewClose}
-                className="text-sm bg-neutral-700 hover:bg-neutral-600 px-3 py-1.5 rounded"
+                className="bg-neutral-700 px-3 py-1 rounded"
               >
                 Close
               </button>
             </div>
-
-            <div className="h-48 bg-neutral-800 flex items-center justify-center mb-4">
-              <span className="text-neutral-500 text-sm">
-                [ preview of {preview.title} ]
-              </span>
+            <div className="bg-neutral-800 p-6 rounded flex justify-center">
+              {componentRegistry[preview.title] ? (
+                (() => {
+                  const PreviewComponent =
+                    componentRegistry[preview.title].Component;
+                  return <PreviewComponent onClose={handlePreviewClose} />;
+                })()
+              ) : preview.image ? (
+                <img
+                  src={preview.image}
+                  alt={`${preview.title} preview`}
+                  className="w-full max-h-64 object-contain"
+                />
+              ) : (
+                <span className="text-neutral-500">No preview available</span>
+              )}
             </div>
 
-            <div className="text-sm text-neutral-300 mb-2">
-              <strong>Category:</strong> {preview.category}
+            <button
+              onClick={() => downloadComponent(preview.title)}
+              className="mt-4 bg-blue-600 px-4 py-2 rounded"
+            >
+              Download Component
+            </button>
+          </div>
+        </div>
+      )}
+
+      {codeView && (
+        <div className="fixed inset-0 z-60 bg-black/60 flex items-center justify-center">
+          <div className="bg-neutral-900 rounded-lg p-6 w-11/12 max-w-3xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {codeView.title} — Source
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCodeClose}
+                  className="bg-neutral-700 px-3 py-1 rounded"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([codeView.source], {
+                      type: "text/jsx",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = codeView.filename || `${codeView.title}.jsx`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="bg-blue-600 px-3 py-1 rounded text-white"
+                >
+                  Download
+                </button>
+              </div>
             </div>
-            <div className="text-sm text-neutral-300 mb-4">
-              <strong>Tags:</strong> {preview.tags.join(", ")}
-            </div>
-            <div className="text-sm text-neutral-300">
-              <strong>Difficulty:</strong> {preview.difficulty}
-            </div>
+
+            <pre className="bg-neutral-800 p-4 rounded max-h-[60vh] overflow-auto text-sm">
+              <code>{codeView.source}</code>
+            </pre>
           </div>
         </div>
       )}

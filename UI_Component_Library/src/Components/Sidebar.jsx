@@ -2,7 +2,12 @@ import React from "react";
 import CategoryItem from "./CategoryItem.jsx";
 import QuickAction from "./QuickAction.jsx";
 
-export default function Sidebar({ categories = [], selected, onSelect }) {
+export default function Sidebar({
+  categories = [],
+  selected,
+  onSelect,
+  quickActions = {},
+}) {
   return (
     <aside className="w-64 border-r border-neutral-800 p-6">
       <h2 className="text-xl font-semibold mb-6">Categories</h2>
@@ -25,9 +30,21 @@ export default function Sidebar({ categories = [], selected, onSelect }) {
         </h3>
 
         <div className="space-y-3 text-neutral-300">
-          <QuickAction icon="⬇️" label="Download All" />
-          <QuickAction icon="📘" label="Style Guide" />
-          <QuickAction icon="💻" label="GitHub" />
+          <QuickAction
+            icon="⬇️"
+            label="Download All"
+            onClick={quickActions.downloadAll}
+          />
+          <QuickAction
+            icon="📘"
+            label="Style Guide"
+            onClick={quickActions.openStyleGuide}
+          />
+          <QuickAction
+            icon="💻"
+            label="GitHub"
+            onClick={quickActions.openGitHub}
+          />
         </div>
       </div>
     </aside>
